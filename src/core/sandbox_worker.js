@@ -6,6 +6,7 @@ const modules = new Map();
 // Flag to track initialization status
 let initialized = false;
 let pyodide = null;
+let pythonAvailable = false;
 
 // Override console methods to relay them to the main thread
 const originalConsole = { ...console };
@@ -83,15 +84,31 @@ async function initialize(type) {
   }
   
   if (type === 'python') {
+    // Temporarily disable Python support to avoid initialization issues
+    console.warn('Python support temporarily disabled to avoid initialization issues');
+    pythonAvailable = false;
+    pyodide = null;
+    
+    /* 
+    // TODO: Re-enable when Pyodide loading issues are resolved
     try {
-      // Load Pyodide
+      // Load Pyodide with timeout and retry logic
       if (typeof loadPyodide === 'undefined') {
-        importScripts('https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js');
+        console.log('Loading Pyodide script...');
+        importScripts('https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js');
       }
       
-      pyodide = await loadPyodide({
-        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/'
-      });
+      console.log('Initializing Pyodide...');
+      pyodide = await Promise.race([
+        loadPyodide({
+          indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/',
+          stdout: (text) => console.log('Python stdout:', text),
+          stderr: (text) => console.error('Python stderr:', text)
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Pyodide initialization timeout')), 30000)
+        )
+      ]);
       
       // Set up Python environment
       await pyodide.runPythonAsync(`
@@ -100,12 +117,15 @@ async function initialize(type) {
         print("Pyodide initialized successfully")
       `);
       
-      console.log('Pyodide initialized');
+      console.log('Pyodide initialized successfully');
+      pythonAvailable = true;
     } catch (error) {
       console.error('Failed to initialize Pyodide:', error);
-      // Don't throw error, just log it and continue without Python support
       console.warn('Python support disabled due to initialization error');
+      pythonAvailable = false;
+      pyodide = null;
     }
+    */
   }
   
   initialized = true;
@@ -124,9 +144,9 @@ async function executeCode(code, language) {
   }
   
   if (language === 'python' || language === 'py') {
-    if (!pyodide) {
+    if (!pythonAvailable || !pyodide) {
       return {
-        output: 'Python environment not available. Please check the console for initialization errors.',
+        output: 'Python environment not available. Pyodide failed to initialize. Check console for details.',
         type: 'error'
       };
     }

@@ -127,6 +127,7 @@ function handleTerminalCommand(command) {
       terminal.writeln('  agents - List all agents');
       terminal.writeln('  memory - Show memory statistics');
       terminal.writeln('  version - Show version information');
+      terminal.writeln('  test js - Test JavaScript execution in sandbox');
       break;
       
     case 'clear':
@@ -167,6 +168,25 @@ function handleTerminalCommand(command) {
     case 'version':
       terminal.writeln('Hermes-X Core v0.1.0');
       terminal.writeln('Built with Vite, TailwindCSS, Monaco Editor, and xterm.js');
+      break;
+      
+    case 'test':
+      if (args[0] === 'js') {
+        terminal.writeln('Testing JavaScript execution...');
+        if (window.HermesX.sandbox) {
+          window.HermesX.sandbox.executeCode('console.log("Hello from sandbox!"); return 42;', 'js')
+            .then(result => {
+              terminal.writeln(`Result: ${JSON.stringify(result)}`);
+            })
+            .catch(error => {
+              terminal.writeln(`\x1b[31mError: ${error.message}\x1b[0m`);
+            });
+        } else {
+          terminal.writeln('\x1b[31mSandbox not initialized\x1b[0m');
+        }
+      } else {
+        terminal.writeln('Usage: test js');
+      }
       break;
       
     default:

@@ -54,9 +54,17 @@ export async function initSandbox() {
     });
   }
   
-  // Initialize the Python environment (Pyodide)
-  await sendMessage('init', { type: 'python' });
-  console.log('Python environment initialized');
+  // Initialize the JavaScript environment first
+  await sendMessage('init', { type: 'javascript' });
+  console.log('JavaScript environment initialized');
+  
+  // Try to initialize Python environment (optional)
+  try {
+    await sendMessage('init', { type: 'python' });
+    console.log('Python environment initialized');
+  } catch (error) {
+    console.warn('Python environment initialization failed, continuing with JavaScript-only support:', error);
+  }
   
   // Return the sandbox interface
   return {
