@@ -85,8 +85,13 @@ async function initialize(type) {
   if (type === 'python') {
     try {
       // Load Pyodide
-      importScripts('https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js');
-      pyodide = await loadPyodide();
+      if (typeof loadPyodide === 'undefined') {
+        importScripts('https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js');
+      }
+      
+      pyodide = await loadPyodide({
+        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/'
+      });
       
       // Set up Python environment
       await pyodide.runPythonAsync(`
@@ -98,7 +103,8 @@ async function initialize(type) {
       console.log('Pyodide initialized');
     } catch (error) {
       console.error('Failed to initialize Pyodide:', error);
-      throw error;
+      // Don't throw error, just log it and continue without Python support
+      console.warn('Python support disabled due to initialization error');
     }
   }
   
@@ -119,7 +125,10 @@ async function executeCode(code, language) {
   
   if (language === 'python' || language === 'py') {
     if (!pyodide) {
-      throw new Error('Python environment not initialized');
+      return {
+        output: 'Python environment not available. Please check the console for initialization errors.',
+        type: 'error'
+      };
     }
     
     try {
@@ -131,7 +140,10 @@ async function executeCode(code, language) {
       };
     } catch (error) {
       console.error('Python execution error:', error);
-      throw error;
+      return {
+        output: `Python execution error: ${error.message}`,
+        type: 'error'
+      };
     }
   } else {
     // Execute JavaScript code
@@ -149,7 +161,10 @@ async function executeCode(code, language) {
       };
     } catch (error) {
       console.error('JavaScript execution error:', error);
-      throw error;
+      return {
+        output: `JavaScript execution error: ${error.message}`,
+        type: 'error'
+      };
     }
   }
 }
@@ -189,7 +204,8 @@ async function loadModule(name, url, type) {
       }
     } else if (type === 'python' || type === 'py') {
       if (!pyodide) {
-        throw new Error('Python environment not initialized');
+        console.warn('Python environment not available for module loading');
+        return false;
       }
       
       if (url.startsWith('http')) {
