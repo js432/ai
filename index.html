@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hermes-X Core</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.1.0/css/xterm.css" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0f172a;
+      color: #e2e8f0;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .tab-active {
+      background-color: #1e293b;
+      border-bottom: 2px solid #3b82f6;
+    }
+    .editor-container, .terminal-container {
+      height: 100%;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="flex flex-col h-screen">
+    <!-- Header -->
+    <header class="bg-slate-800 p-4 flex justify-between items-center">
+      <div class="flex items-center">
+        <h1 class="text-2xl font-bold text-blue-400">Hermes-X Core</h1>
+        <span class="ml-4 text-sm bg-blue-600 px-2 py-1 rounded">v0.1.0</span>
+      </div>
+      <div class="flex space-x-4">
+        <button id="settings-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Settings
+        </button>
+        <button id="memory-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          Memory
+        </button>
+      </div>
+    </header>
+
+    <!-- Agent Tabs -->
+    <div class="bg-slate-900 px-4 flex overflow-x-auto">
+      <div class="tab tab-active px-4 py-2 cursor-pointer" data-agent="planner">PlannerAgent</div>
+      <div class="tab px-4 py-2 cursor-pointer" data-agent="coder">CoderAgent</div>
+      <div class="tab px-4 py-2 cursor-pointer" data-agent="logic">LogicAgent</div>
+      <div class="tab px-4 py-2 cursor-pointer" data-agent="runtime">RuntimeAgent</div>
+      <div class="tab px-4 py-2 cursor-pointer" data-agent="exploration">ExplorationAgent</div>
+      <div class="tab px-4 py-2 cursor-pointer" data-agent="exploit">ExploitMapperAgent</div>
+      <div class="tab px-4 py-2 cursor-pointer" data-agent="memory">MemoryAgent</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+      <!-- Left Panel - Editor -->
+      <div class="w-full md:w-1/2 h-full border-r border-slate-700">
+        <div class="flex flex-col h-full">
+          <div class="bg-slate-800 p-2 flex justify-between items-center">
+            <div class="flex space-x-2">
+              <button id="new-file-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-sm">New File</button>
+              <button id="save-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-sm">Save</button>
+            </div>
+            <div>
+              <select id="file-selector" class="bg-slate-700 text-white px-2 py-1 rounded text-sm">
+                <option value="">Select File</option>
+              </select>
+            </div>
+          </div>
+          <div id="editor" class="editor-container flex-1"></div>
+        </div>
+      </div>
+
+      <!-- Right Panel - Terminal and Console -->
+      <div class="w-full md:w-1/2 h-full flex flex-col">
+        <!-- Terminal -->
+        <div class="h-1/2 border-b border-slate-700">
+          <div class="bg-slate-800 p-2 flex justify-between items-center">
+            <span>Terminal</span>
+            <button id="clear-terminal-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-sm">Clear</button>
+          </div>
+          <div id="terminal" class="terminal-container"></div>
+        </div>
+
+        <!-- Prompt Console -->
+        <div class="h-1/2">
+          <div class="bg-slate-800 p-2 flex justify-between items-center">
+            <span>Prompt Console</span>
+            <div class="flex space-x-2">
+              <button id="run-btn" class="bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-sm">Run</button>
+              <button id="clear-console-btn" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-sm">Clear</button>
+            </div>
+          </div>
+          <div class="h-full flex flex-col">
+            <div id="console-output" class="flex-1 bg-slate-900 p-2 overflow-y-auto font-mono text-sm"></div>
+            <div class="p-2 bg-slate-800">
+              <textarea id="prompt-input" class="w-full bg-slate-700 text-white p-2 rounded" rows="3" placeholder="Enter your prompt here..."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-slate-800 rounded-lg p-6 w-full max-w-md">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">Settings</h2>
+        <button id="close-settings" class="text-gray-400 hover:text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block mb-1">API Endpoint</label>
+          <input id="api-endpoint" type="text" class="w-full bg-slate-700 text-white p-2 rounded" value="https://api.deepseek.com/v1/completions">
+        </div>
+        <div>
+          <label class="block mb-1">API Key</label>
+          <input id="api-key" type="password" class="w-full bg-slate-700 text-white p-2 rounded" value="sk-10c48402c68848518e97ac560f0d786c">
+        </div>
+        <div>
+          <label class="block mb-1">Model</label>
+          <select id="model-selector" class="w-full bg-slate-700 text-white p-2 rounded">
+            <option value="deepseek">deepseek</option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-1">Token Limit</label>
+          <input id="token-limit" type="number" class="w-full bg-slate-700 text-white p-2 rounded" value="4096">
+        </div>
+        <div class="pt-4">
+          <button id="save-settings" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Memory Viewer Modal -->
+  <div id="memory-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-slate-800 rounded-lg p-6 w-full max-w-4xl h-3/4">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">Memory Viewer</h2>
+        <button id="close-memory" class="text-gray-400 hover:text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="flex h-full">
+        <div class="w-1/3 border-r border-slate-700 pr-4 overflow-y-auto">
+          <h3 class="text-lg font-semibold mb-2">Memory Chains</h3>
+          <div id="memory-chains" class="space-y-2">
+            <!-- Memory chains will be populated here -->
+          </div>
+        </div>
+        <div class="w-2/3 pl-4 overflow-y-auto">
+          <h3 class="text-lg font-semibold mb-2">Memory Details</h3>
+          <pre id="memory-details" class="bg-slate-900 p-4 rounded text-sm overflow-x-auto"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
